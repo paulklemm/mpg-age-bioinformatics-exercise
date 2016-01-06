@@ -8,6 +8,8 @@ output: html_document
 
 *This RMarkdown document was created as solution for the [MPG-Exercise](https://github.com/mpg-age-bioinformatics/exercise). The code can be found [here](https://github.com/paulklemm/mpg-age-bioinformatics-exercise). This interactive RMarkdown document uses Shiny as runtime. In order to create a static HTML document, please remove `runtime: "shiny"` in the header and the Shiny code in the last code segment.*
 
+*This solution relies on the `ibb` package, which is not available via CRAN or Github. Therefore, it has to be installed manually. Please follow the instructions on the [package website](http://www.oncoproteomics.nl/software/BetaBinomial.html). Other required packages are managed using [Packrat](https://rstudio.github.io/packrat/).*
+
 This analysis utilizes the accurate paired sample test for count data by Pham and Jiminez [1]. They propose a beta-binomial test for experiments with two outcomes, usually pre- and post-treatment. A random effect variable parameterizes the distribution of two Poisson distributions. This effect variable is modeled using an inverted beta binomial model.
 
 ### Approach
