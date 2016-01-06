@@ -13,6 +13,12 @@ Source: CRAN
 Version: 0.3.1
 Hash: 096699d1ac1cf530acfc646a0c90ee5d
 
+Package: PKI
+Source: CRAN
+Version: 0.1-3
+Hash: aca3e459c659b6d8266538520f72ba19
+Requires: base64enc
+
 Package: R6
 Source: CRAN
 Version: 2.1.1
@@ -23,6 +29,17 @@ Source: CRAN
 Version: 1.1-2
 Hash: c0d56cd15034f395874c870141870c25
 
+Package: RCurl
+Source: CRAN
+Version: 1.95-4.7
+Hash: 7756ed9df5d79ca87bc9e93f85d89b87
+Requires: bitops
+
+Package: RJSONIO
+Source: CRAN
+Version: 1.3-0
+Hash: fb672e20eb6f3010a3639f855d8ef6de
+
 Package: Rcpp
 Source: CRAN
 Version: 0.12.2
@@ -32,6 +49,11 @@ Package: assertthat
 Source: CRAN
 Version: 0.1
 Hash: 0afb92b59b02593c70ff8046700ba9d3
+
+Package: base64enc
+Source: CRAN
+Version: 0.1-3
+Hash: c590d29e555926af053055e23ee79efb
 
 Package: bitops
 Source: CRAN
@@ -97,6 +119,17 @@ Source: CRAN
 Version: 0.2.6
 Hash: 595e7dea94f5f049dfc1ed739f5161af
 Requires: digest
+
+Package: httpuv
+Source: CRAN
+Version: 1.3.3
+Hash: ad41c96192683a69d291a45192ec8e2b
+Requires: Rcpp
+
+Package: jsonlite
+Source: CRAN
+Version: 0.9.19
+Hash: 4a983f753b6e88ae0f5a6ac152d8cc32
 
 Package: knitr
 Source: CRAN
@@ -165,6 +198,12 @@ Version: 0.3.0
 Hash: 323f8f5a7f2823f19bd3fd3c15fc196a
 Requires: RColorBrewer, Rcpp, dichromat, labeling, munsell, plyr
 
+Package: shiny
+Source: CRAN
+Version: 0.12.2
+Hash: 31cd1fe3028ac7ef846adacf8ed5bfd2
+Requires: R6, digest, htmltools, httpuv, jsonlite, mime, xtable
+
 Package: stringi
 Source: CRAN
 Version: 1.0-1
@@ -175,6 +214,11 @@ Source: CRAN
 Version: 1.0.0
 Hash: 2676dd5f88890910962b733b0f9540e1
 Requires: magrittr, stringi
+
+Package: xtable
+Source: CRAN
+Version: 1.8-0
+Hash: 3816a222bb6837b3344d230b54b4c3cc
 
 Package: yaml
 Source: CRAN
