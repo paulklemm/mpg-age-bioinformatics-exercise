@@ -1,0 +1,130 @@
+---
+title: "MPG-Exercise"
+author: "Paul Klemm"
+runtime: "shiny"
+date: "23. December 2015"
+output: html_document
+---
+
+*This RMarkdown document was created as solution for the [MPG-Exercise](https://github.com/mpg-age-bioinformatics/exercise). The code can be found [here](https://github.com/paulklemm/mpg-age-bioinformatics-exercise). This interactive RMarkdown document uses Shiny as runtime. In order to create a static HTML document, please remove `runtime: "shiny"` in the header and the Shiny code in the last code segment.*
+
+This analysis utilizes the accurate paired sample test for count data by Pham and Jiminez [1]. They propose a beta-binomial test for experiments with two outcomes, usually pre- and post-treatment. A random effect variable parameterizes the distribution of two Poisson distributions. This effect variable is modeled using an inverted beta binomial model.
+
+### Approach
+
+The accurate paired sample test for count data by Pham and Jiminez [1] expects a list of measures of interest as well as all other measures of the subjects for both groups (before or after treatment). In the exercise, the groups are defined by the acquisition point in time (August and December). The data comprises four sampling times for both month. The data, however, contains missing and faulty data and has to be cleaned first.
+
+### Load All Required Libraries and the Data
+
+```{r message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(ibb)
+library(reshape2)
+```
+```{r, fig.height=8, fig.width=12}
+# Read the data
+raw_data <- read.table('raw_data.tsv', header=TRUE, sep="\t")
+# First, show the summary of all variables
+summary(raw_data)
+# Show a matrix of histograms for all variables
+g <- ggplot(melt(raw_data),aes(x=value))
+g <- g + geom_histogram() + scale_x_log10(breaks=c(1, 10, 100, 1000, 10000, 100000))
+g <- g + facet_wrap(~variable) + xlab("gene count") + ylab("subject count")
+g
+```
+
+The plot is scaled to log(10) on the x axis to allow a proper visual assessment. A linear scale would result only in one visual bar due to the higher frequency values.
+
+We can observe negative values in the total count columns. By definition (see `Readme.md`), this should not be the case, because `gene(t) = isoform_malignant(m) + isoform_normal.` The negative values seem to be analysis errors. Therefore, subjects with negative values are excluded from the calculation.
+
+There are several special cases to consider in the data set. In order to conduct the analysis, a subject has to satisfy the following conditions:
+
+- Comprise only positive counts
+- Have at least one valid count for malignant isoform in August as well as December
+- Have at least one valid count for total isoforms in August as well as December
+- Valid counts do not include infinite values (denoted as `Inf` in the data)
+
+```{r, fig.height=8, fig.width=12}
+# Read in the data, but replace infinite values with `NA`
+processed_data <- read.table('raw_data.tsv', header=TRUE, sep="\t", na.strings = c("inf"))
+# Remove columns with negative December 1st values
+processed_data <- processed_data %>% filter(December_1t >= 0 | is.na(December_1t))
+# Get the number of subjects with negative values
+subjects_with_negative_values <- nrow(raw_data) - nrow(processed_data)
+# Replace NAs with 0s
+processed_data[is.na(processed_data)] <- 0
+
+# Calculate Mean counts
+processed_data <- processed_data %>% mutate(august_mean_malignant = (August_1m + August_2m + August_3m + August_4m) / 4)
+processed_data <- processed_data %>% mutate(december_mean_malignant = (December_1m + December_2m + December_3m + December_4m) / 4)
+processed_data <- processed_data %>% mutate(august_mean_total = (August_1t + August_2t + August_3t + August_4t) / 4)
+processed_data <- processed_data %>% mutate(december_mean_total = (December_1t + December_2t + December_3t + December_4t) / 4)
+
+# Remove subjects, where any of the summary variables is 0
+processed_data <- processed_data %>% filter(august_mean_malignant > 0 & december_mean_malignant > 0 & august_mean_total > 0 & december_mean_total > 0)
+# Get the number of removed subjects because they have a negative summary variable
+subjects_with_summary_zero <- nrow(raw_data) - nrow(processed_data) - subjects_with_negative_values
+# Show a matrix of histograms for all variables
+g <- ggplot(melt(processed_data),aes(x=value))
+g <- g + geom_histogram() + scale_x_log10(breaks=c(1, 10, 100, 1000, 10000, 100000))
+g <- g + facet_wrap(~variable) + xlab("gene count") + ylab("subject count")
+g
+```
+
+A total of `r round(100 * nrow(processed_data) / nrow(raw_data), digits = 2)`% of subjects satisfy the criteria.
+
+- The majority of subjects (`r round(100 * subjects_with_summary_zero / nrow(raw_data), digits = 2)`%) do not comprise valid counts for malignant isoforms or total isoform number in August or December.
+- A total of `r subjects_with_negative_values` subjects contain negative summary values and are therefore excluded in the analysis.
+
+### Calculate φ and p-values
+
+It can be concluded that the individual sampling dates are sparse and therefore are not suited for the analysis with the accurate paired sample test for count data by Pham and Jiminez [1]. The derived summary variables for August and December, however, cover the information for subjects which have at least one valid measurement in one of the samples for malignant and total gene count in August and December. Therefore, the analysis is conducted on these variables.
+
+**The analysis takes quite a while. Therefore, the result is cached in the `result.rtmp` file. If you want to redo the analysis, just delete the `result.rtmp` file.** 
+
+```{r}
+
+# Convert the data into the ibb format
+x <- data.frame(processed_data$august_mean_malignant, processed_data$december_mean_malignant)
+tx <- colSums(x)
+group <- c("august", "december")
+
+if (file.exists("result.rtmp")) {
+  load("result.rtmp")
+} else {
+  # Calculate the result using all but one CPU cores
+  result <- ibb.test(x, tx, group, n.threads = 2)
+  # Save the result of the test in a local file
+  save(result, file = "result.rtmp")
+}
+# Attach the p-values and fold changes to the data frame
+result_data <- cbind(processed_data, result$fc, result$p.value)
+```
+
+The analysis gives us for each subject the fold change φ (how many "times" the value changes) as well as the p-value. The task is to derive subjects with significant level changes. To further limit the p-value, a slider input is provided. The subjects of interest are represented in the following table. A fairly low p-value of `0.001` limits the number of subjects to `r nrow(filter(.data = result_data, result$p.value < 0.001))`.
+
+```{r}
+# Define helper function deriving the final list
+get_significant_subjects <- function(pvalue) {
+  result_significant <- filter(.data = result_data, result$p.value < pvalue)
+  show_result <- data.frame(result_significant$august_mean_malignant, result_significant$august_mean_total, result_significant$december_mean_malignant, result_significant$december_mean_total,
+result_significant$`result$fc`,
+result_significant$`result$p.value`)
+  colnames(show_result) = c("Aug_Mal", "Aug_Tot", "Dec_Mal", "Dec_Tot", "folding", "p-value")
+  return(show_result)
+}
+# Comment out the following code for the static HTML version
+## SHINY
+sliderInput("pvalue", "p-value:", min = 0, max = 0.05, value = 0.001)
+# Display all subjects that satisfy the p-value restriction given by the slider
+renderTable({
+  get_significant_subjects(input$pvalue)
+}, digits=c(2,2,2,2,2,3,5))
+## / SHINY
+# Uncomment the following line for the static HTML version
+#get_significant_subjects(0.001)
+```
+
+### References
+[1] Pham, T. V., & Jimenez, C. R. (2012). An accurate paired sample test for count data. Bioinformatics, 28(18), i596-i602.
